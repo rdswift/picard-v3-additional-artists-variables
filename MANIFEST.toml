@@ -1,0 +1,20 @@
+uuid = "2eae631a-1696-4bdc-841f-f75aaa3ae294"
+name = "Additional Artists Variables"
+authors = ["Bob Swift"]
+version = "1.0"
+description = """
+This plugin provides specialized album and track variables for use in
+naming scripts.
+"""
+api = ['3.0']
+license = "GPL-2.0-or-later"
+license_url = "https://www.gnu.org/licenses/gpl-2.0.html"
+long_description = """
+This plugin provides specialized album and track variables for use in
+naming scripts. It is based on the "Album Artist Extension" plugin, but
+expands the functionality to also include track artists. Note that it
+cannot be used as a direct drop-in replacement for the "Album Artist
+Extension" plugin because the variables are provided with different
+names.  This will require changes to existing scripts if switching to
+this plugin.
+"""
