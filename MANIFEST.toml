@@ -1,11 +1,7 @@
 uuid = "2eae631a-1696-4bdc-841f-f75aaa3ae294"
 name = "Additional Artists Variables"
 authors = ["Bob Swift"]
-version = "1.0"
-description = """
-This plugin provides specialized album and track variables for use in
-naming scripts.
-"""
+description = "This plugin provides specialized album and track variables for use in naming scripts."
 api = ['3.0']
 license = "GPL-2.0-or-later"
 license_url = "https://www.gnu.org/licenses/gpl-2.0.html"
@@ -17,4 +13,30 @@ cannot be used as a direct drop-in replacement for the "Album Artist
 Extension" plugin because the variables are provided with different
 names.  This will require changes to existing scripts if switching to
 this plugin.
+"""
+categories = ["metadata"]
+homepage = "https://picard-plugins-user-guides.readthedocs.io/en/latest/additional_artists_variables/user_guide.html"
+
+
+[name_i18n]
+de = "Zusätzliche Künstlervariablen"
+fr = "Variables supplémentaires relatives aux artistes"
+
+[description_i18n]
+de = "Dieses Plugin stellt spezielle Album- und Titelvariablen für die Verwendung in Benennungsskripten bereit."
+fr = "Ce plugin fournit des variables spécialisées pour les albums et les pistes à utiliser dans les scripts de nommage."
+
+[long_description_i18n]
+de = """
+Dieses Plugin stellt spezielle Album- und Titelvariablen für die Verwendung in Benennungsskripten bereit. Es basiert auf
+dem Plugin „Album Artist Extension“, erweitert jedoch die Funktionalität um Titelkünstler. Beachten Sie, dass es nicht als
+direkter Ersatz für das Plugin „Album Artist Extension“ verwendet werden kann, da die Variablen mit unterschiedlichen Namen
+bereitgestellt werden.  Bei einem Wechsel zu diesem Plugin müssen daher Änderungen an bestehenden Skripten vorgenommen werden.
+"""
+
+fr = """
+Ce plugin fournit des variables spécialisées pour les albums et les pistes à utiliser dans les scripts de nommage. Il est
+basé sur le plugin « Album Artist Extension », mais étend ses fonctionnalités pour inclure également les artistes des pistes.
+Notez qu'il ne peut pas être utilisé comme remplacement direct du plugin « Album Artist Extension » car les variables sont
+fournies avec des noms différents.  Cela nécessitera des modifications des scripts existants si vous passez à ce plugin.
 """
