@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2018-2023 Bob Swift (rdswift)
+# Copyright (C) 2018-2023, 2025 Bob Swift (rdswift)
 # Copyright (C) 2023 Ruud van Asseldonk (ruuda)
 #
 # This program is free software; you can redistribute it and/or
@@ -30,231 +30,233 @@ ID_ALIASES_LEGAL_NAME = 'd4dcd0c0-b341-3612-a332-c0ce797b25cf'
 LOG_PREFIX = 'Additional Artists Variables'
 
 
-def process_artists(album_id, source_metadata, destination_metadata, source_type):
-    # Test for valid metadata node.
-    # The 'artist-credit' key should always be there.
-    # This check is to avoid a runtime error if it doesn't exist for some reason.
-    if 'artist-credit' in source_metadata:
-        # Initialize variables to default values
-        sort_pri_artist = ''
-        sort_pri_artist_cred = ''
-        std_artist = ''
-        cred_artist = ''
-        sort_artist = ''
-        cred_sort_artist = ''
-        legal_artist = ''
-        additional_std_artist = ''
-        additional_cred_artist = ''
-        additional_sort_artist = ''
-        additional_cred_sort_artist = ''
-        additional_legal_artist = ''
-        std_artist_list = []
-        cred_artist_list = []
-        sort_artist_list = []
-        cred_sort_artist_list = []
-        legal_artist_list = []
-        artist_count = 0
-        artist_ids = []
-        artist_types = []
-        artist_join_phrases = []
-        for artist_credit in source_metadata['artist-credit']:
-            # Initialize temporary variables for each loop.
-            temp_std_name = ''
-            temp_sort_name = ''
-            temp_cred_name = ''
-            temp_cred_sort_name = ''
-            temp_legal_name = ''
-            temp_legal_sort_name = ''
-            temp_phrase = ''
-            temp_id = ''
-            temp_type = ''
-            # Check if there is a 'joinphrase' specified.
-            if 'joinphrase' in artist_credit:
-                temp_phrase = artist_credit['joinphrase']
-            else:
-                metadata_error(album_id, 'artist-credit.joinphrase', source_type)
-            # Check if there is a 'name' specified.
-            if 'name' in artist_credit:
-                temp_cred_name = artist_credit['name']
-            else:
-                metadata_error(album_id, 'artist-credit.name', source_type)
-            # Check if there is an 'artist' specified.
-            if 'artist' in artist_credit:
-                if 'id' in artist_credit['artist']:
-                    temp_id = artist_credit['artist']['id']
+class ArtistVariablesPlugin:
+    def __init__(self, api: PluginApi):
+        self.api = api
+
+    def process_artists(self, album_id, source_metadata, destination_metadata, source_type):
+        # Test for valid metadata node.
+        # The 'artist-credit' key should always be there.
+        # This check is to avoid a runtime error if it doesn't exist for some reason.
+        if 'artist-credit' in source_metadata:
+            # Initialize variables to default values
+            sort_pri_artist = ''
+            sort_pri_artist_cred = ''
+            std_artist = ''
+            cred_artist = ''
+            sort_artist = ''
+            cred_sort_artist = ''
+            legal_artist = ''
+            additional_std_artist = ''
+            additional_cred_artist = ''
+            additional_sort_artist = ''
+            additional_cred_sort_artist = ''
+            additional_legal_artist = ''
+            std_artist_list = []
+            cred_artist_list = []
+            sort_artist_list = []
+            cred_sort_artist_list = []
+            legal_artist_list = []
+            artist_count = 0
+            artist_ids = []
+            artist_types = []
+            artist_join_phrases = []
+            for artist_credit in source_metadata['artist-credit']:
+                # Initialize temporary variables for each loop.
+                temp_std_name = ''
+                temp_sort_name = ''
+                temp_cred_name = ''
+                temp_cred_sort_name = ''
+                temp_legal_name = ''
+                temp_legal_sort_name = ''
+                temp_phrase = ''
+                temp_id = ''
+                temp_type = ''
+                # Check if there is a 'joinphrase' specified.
+                if 'joinphrase' in artist_credit:
+                    temp_phrase = artist_credit['joinphrase']
                 else:
-                    metadata_error(album_id, 'artist-credit.artist.id', source_type)
-                if 'name' in artist_credit['artist']:
-                    temp_std_name = artist_credit['artist']['name']
+                    self.metadata_error(album_id, 'artist-credit.joinphrase', source_type)
+                # Check if there is a 'name' specified.
+                if 'name' in artist_credit:
+                    temp_cred_name = artist_credit['name']
                 else:
-                    metadata_error(album_id, 'artist-credit.artist.name', source_type)
-                if 'sort-name' in artist_credit['artist']:
-                    temp_sort_name = artist_credit['artist']['sort-name']
-                    temp_cred_sort_name = temp_sort_name
+                    self.metadata_error(album_id, 'artist-credit.name', source_type)
+                # Check if there is an 'artist' specified.
+                if 'artist' in artist_credit:
+                    if 'id' in artist_credit['artist']:
+                        temp_id = artist_credit['artist']['id']
+                    else:
+                        self.metadata_error(album_id, 'artist-credit.artist.id', source_type)
+                    if 'name' in artist_credit['artist']:
+                        temp_std_name = artist_credit['artist']['name']
+                    else:
+                        self.metadata_error(album_id, 'artist-credit.artist.name', source_type)
+                    if 'sort-name' in artist_credit['artist']:
+                        temp_sort_name = artist_credit['artist']['sort-name']
+                        temp_cred_sort_name = temp_sort_name
+                    else:
+                        self.metadata_error(album_id, 'artist-credit.artist.sort-name', source_type)
+                    if 'type' in artist_credit['artist']:
+                        temp_type = artist_credit['artist']['type']
+                    else:
+                        self.metadata_error(album_id, 'artist-credit.artist.type', source_type)
+                    if 'aliases' in artist_credit['artist']:
+                        for item in artist_credit['artist']['aliases']:
+                            if 'type-id' in item and item['type-id'] == ID_ALIASES_LEGAL_NAME:
+                                if 'ended' in item and not item['ended']:
+                                    if 'name' in item:
+                                        temp_legal_name = item['name']
+                                    if 'sort-name' in item:
+                                        temp_legal_sort_name = item['sort-name']
+                            if 'type-id' in item and item['type-id'] == ID_ALIASES_ARTIST_NAME:
+                                if 'name' in item and 'sort-name' in item and str(item['name']).lower() == temp_cred_name.lower():
+                                    temp_cred_sort_name = item['sort-name']
+                    tag_list = []
+                    if self.api.global_config.setting['max_genres']:
+                        for tag_type in ['user-genres', 'genres', 'user-tags', 'tags']:
+                            if tag_type in artist_credit['artist']:
+                                for item in sorted(sorted(artist_credit['artist'][tag_type], key=itemgetter('name')), key=itemgetter('count'), reverse=True):
+                                    if item['count'] > 0:
+                                        tag_list.append(item['name'])
+                        tag_list = tag_list[:self.api.global_config.setting['max_genres']]
                 else:
-                    metadata_error(album_id, 'artist-credit.artist.sort-name', source_type)
-                if 'type' in artist_credit['artist']:
-                    temp_type = artist_credit['artist']['type']
-                else:
-                    metadata_error(album_id, 'artist-credit.artist.type', source_type)
-                if 'aliases' in artist_credit['artist']:
-                    for item in artist_credit['artist']['aliases']:
-                        if 'type-id' in item and item['type-id'] == ID_ALIASES_LEGAL_NAME:
-                            if 'ended' in item and not item['ended']:
-                                if 'name' in item:
-                                    temp_legal_name = item['name']
-                                if 'sort-name' in item:
-                                    temp_legal_sort_name = item['sort-name']
-                        if 'type-id' in item and item['type-id'] == ID_ALIASES_ARTIST_NAME:
-                            if 'name' in item and 'sort-name' in item and str(item['name']).lower() == temp_cred_name.lower():
-                                temp_cred_sort_name = item['sort-name']
-                tag_list = []
-                if _api.global_config.setting['max_genres']:
-                    for tag_type in ['user-genres', 'genres', 'user-tags', 'tags']:
-                        if tag_type in artist_credit['artist']:
-                            for item in sorted(sorted(artist_credit['artist'][tag_type], key=itemgetter('name')), key=itemgetter('count'), reverse=True):
-                                if item['count'] > 0:
-                                    tag_list.append(item['name'])
-                    tag_list = tag_list[:_api.global_config.setting['max_genres']]
-            else:
-                # No 'artist' specified.  Log as an error.
-                metadata_error(album_id, 'artist-credit.artist', source_type)
-            std_artist += temp_std_name + temp_phrase
-            cred_artist += temp_cred_name + temp_phrase
-            sort_artist += temp_sort_name + temp_phrase
-            cred_sort_artist += temp_cred_sort_name + temp_phrase
-            artist_types.append(temp_type if temp_type else 'unknown',)
-            artist_join_phrases.append(temp_phrase if temp_phrase else '\u200B',)
-            if temp_legal_name:
-                legal_artist += temp_legal_name + temp_phrase
-                legal_artist_list.append(temp_legal_name,)
-            else:
-                # Use standardized name for combined string if legal name not available
-                legal_artist += temp_std_name + temp_phrase
-                # Use 'n/a' for list if legal name not available
-                legal_artist_list.append('n/a',)
-            if temp_std_name:
-                std_artist_list.append(temp_std_name,)
-            if temp_sort_name:
-                sort_artist_list.append(temp_sort_name,)
-            if temp_cred_name:
-                cred_artist_list.append(temp_cred_name,)
-            if temp_cred_sort_name:
-                cred_sort_artist_list.append(temp_cred_sort_name,)
-            if temp_id:
-                artist_ids.append(temp_id,)
-            if artist_count < 1:
-                if temp_id:
-                    destination_metadata['~artists_{0}_primary_id'.format(source_type,)] = temp_id
-                destination_metadata['~artists_{0}_primary_std'.format(source_type,)] = temp_std_name
-                destination_metadata['~artists_{0}_primary_cred'.format(source_type,)] = temp_cred_name
-                destination_metadata['~artists_{0}_primary_sort'.format(source_type,)] = temp_sort_name
-                destination_metadata['~artists_{0}_primary_cred_sort'.format(source_type,)] = temp_cred_sort_name
-                destination_metadata['~artists_{0}_primary_legal'.format(source_type,)] = temp_legal_name
-                destination_metadata['~artists_{0}_primary_sort_legal'.format(source_type,)] = temp_legal_sort_name
-                sort_pri_artist += temp_sort_name + temp_phrase
-                sort_pri_artist_cred += temp_cred_sort_name + temp_phrase
-                if tag_list and source_type == 'album':
-                    destination_metadata['~artists_{0}_primary_tags'.format(source_type,)] = tag_list
-            else:
-                sort_pri_artist += temp_std_name + temp_phrase
-                additional_std_artist += temp_std_name + temp_phrase
-                additional_cred_artist += temp_cred_name + temp_phrase
-                additional_sort_artist += temp_sort_name + temp_phrase
+                    # No 'artist' specified.  Log as an error.
+                    self.metadata_error(album_id, 'artist-credit.artist', source_type)
+
+                std_artist += temp_std_name + temp_phrase
+                cred_artist += temp_cred_name + temp_phrase
+                sort_artist += temp_sort_name + temp_phrase
+                cred_sort_artist += temp_cred_sort_name + temp_phrase
+                artist_types.append(temp_type if temp_type else 'unknown',)
+                artist_join_phrases.append(temp_phrase if temp_phrase else '\u200B',)
                 if temp_legal_name:
-                    additional_legal_artist += temp_legal_name + temp_phrase
+                    legal_artist += temp_legal_name + temp_phrase
+                    legal_artist_list.append(temp_legal_name,)
                 else:
-                    additional_legal_artist += temp_std_name + temp_phrase
+                    # Use standardized name for combined string if legal name not available
+                    legal_artist += temp_std_name + temp_phrase
+                    # Use 'n/a' for list if legal name not available
+                    legal_artist_list.append('n/a',)
+                if temp_std_name:
+                    std_artist_list.append(temp_std_name,)
+                if temp_sort_name:
+                    sort_artist_list.append(temp_sort_name,)
+                if temp_cred_name:
+                    cred_artist_list.append(temp_cred_name,)
                 if temp_cred_sort_name:
-                    additional_cred_sort_artist += temp_cred_sort_name + temp_phrase
+                    cred_sort_artist_list.append(temp_cred_sort_name,)
+                if temp_id:
+                    artist_ids.append(temp_id,)
+                if artist_count < 1:
+                    if temp_id:
+                        destination_metadata['~artists_{0}_primary_id'.format(source_type,)] = temp_id
+                    destination_metadata['~artists_{0}_primary_std'.format(source_type,)] = temp_std_name
+                    destination_metadata['~artists_{0}_primary_cred'.format(source_type,)] = temp_cred_name
+                    destination_metadata['~artists_{0}_primary_sort'.format(source_type,)] = temp_sort_name
+                    destination_metadata['~artists_{0}_primary_cred_sort'.format(source_type,)] = temp_cred_sort_name
+                    destination_metadata['~artists_{0}_primary_legal'.format(source_type,)] = temp_legal_name
+                    destination_metadata['~artists_{0}_primary_sort_legal'.format(source_type,)] = temp_legal_sort_name
+                    sort_pri_artist += temp_sort_name + temp_phrase
                     sort_pri_artist_cred += temp_cred_sort_name + temp_phrase
+                    if tag_list and source_type == 'album':
+                        destination_metadata['~artists_{0}_primary_tags'.format(source_type,)] = tag_list
                 else:
-                    additional_cred_sort_artist += temp_sort_name + temp_phrase
-                    sort_pri_artist_cred += temp_sort_name + temp_phrase
-            artist_count += 1
-    else:
-        # No valid metadata found.  Log as error.
-        metadata_error(album_id, 'artist-credit', source_type)
-    additional_std_artist_list = std_artist_list[1:]
-    additional_cred_artist_list = cred_artist_list[1:]
-    additional_sort_artist_list = sort_artist_list[1:]
-    additional_cred_sort_artist_list = cred_sort_artist_list[1:]
-    additional_legal_artist_list = legal_artist_list[1:]
-    additional_artist_ids = artist_ids[1:]
-    if additional_artist_ids:
-        destination_metadata['~artists_{0}_additional_id'.format(source_type,)] = additional_artist_ids
-    if additional_std_artist:
-        destination_metadata['~artists_{0}_additional_std'.format(source_type,)] = additional_std_artist
-    if additional_cred_artist:
-        destination_metadata['~artists_{0}_additional_cred'.format(source_type,)] = additional_cred_artist
-    if additional_sort_artist:
-        destination_metadata['~artists_{0}_additional_sort'.format(source_type,)] = additional_sort_artist
-    if additional_cred_sort_artist:
-        destination_metadata['~artists_{0}_additional_cred_sort'.format(source_type,)] = additional_cred_sort_artist
-    if additional_legal_artist:
-        destination_metadata['~artists_{0}_additional_legal'.format(source_type,)] = additional_legal_artist
-    if additional_std_artist_list:
-        destination_metadata['~artists_{0}_additional_std_multi'.format(source_type,)] = additional_std_artist_list
-    if additional_cred_artist_list:
-        destination_metadata['~artists_{0}_additional_cred_multi'.format(source_type,)] = additional_cred_artist_list
-    if additional_sort_artist_list:
-        destination_metadata['~artists_{0}_additional_sort_multi'.format(source_type,)] = additional_sort_artist_list
-    if additional_cred_sort_artist_list:
-        destination_metadata['~artists_{0}_additional_cred_sort_multi'.format(source_type,)] = additional_cred_sort_artist_list
-    if additional_legal_artist_list:
-        destination_metadata['~artists_{0}_additional_legal_multi'.format(source_type,)] = additional_legal_artist_list
-    if std_artist:
-        destination_metadata['~artists_{0}_all_std'.format(source_type,)] = std_artist
-    if cred_artist:
-        destination_metadata['~artists_{0}_all_cred'.format(source_type,)] = cred_artist
-    if cred_sort_artist:
-        destination_metadata['~artists_{0}_all_cred_sort'.format(source_type,)] = cred_sort_artist
-    if sort_artist:
-        destination_metadata['~artists_{0}_all_sort'.format(source_type,)] = sort_artist
-    if legal_artist:
-        destination_metadata['~artists_{0}_all_legal'.format(source_type,)] = legal_artist
-    if std_artist_list:
-        destination_metadata['~artists_{0}_all_std_multi'.format(source_type,)] = std_artist_list
-    if cred_artist_list:
-        destination_metadata['~artists_{0}_all_cred_multi'.format(source_type,)] = cred_artist_list
-    if sort_artist_list:
-        destination_metadata['~artists_{0}_all_sort_multi'.format(source_type,)] = sort_artist_list
-    if cred_sort_artist_list:
-        destination_metadata['~artists_{0}_all_cred_sort_multi'.format(source_type,)] = cred_sort_artist_list
-    if legal_artist_list:
-        destination_metadata['~artists_{0}_all_legal_multi'.format(source_type,)] = legal_artist_list
-    if sort_pri_artist:
-        destination_metadata['~artists_{0}_all_sort_primary'.format(source_type,)] = sort_pri_artist
-    if artist_types:
-        destination_metadata['~artists_{0}_all_types'.format(source_type,)] = artist_types
-    if artist_join_phrases:
-        destination_metadata['~artists_{0}_all_join_phrases'.format(source_type,)] = artist_join_phrases
-    if artist_count:
-        destination_metadata['~artists_{0}_all_count'.format(source_type,)] = artist_count
+                    sort_pri_artist += temp_std_name + temp_phrase
+                    additional_std_artist += temp_std_name + temp_phrase
+                    additional_cred_artist += temp_cred_name + temp_phrase
+                    additional_sort_artist += temp_sort_name + temp_phrase
+                    if temp_legal_name:
+                        additional_legal_artist += temp_legal_name + temp_phrase
+                    else:
+                        additional_legal_artist += temp_std_name + temp_phrase
+                    if temp_cred_sort_name:
+                        additional_cred_sort_artist += temp_cred_sort_name + temp_phrase
+                        sort_pri_artist_cred += temp_cred_sort_name + temp_phrase
+                    else:
+                        additional_cred_sort_artist += temp_sort_name + temp_phrase
+                        sort_pri_artist_cred += temp_sort_name + temp_phrase
+                artist_count += 1
+        else:
+            # No valid metadata found.  Log as error.
+            self.metadata_error(album_id, 'artist-credit', source_type)
 
+        additional_std_artist_list = std_artist_list[1:]
+        additional_cred_artist_list = cred_artist_list[1:]
+        additional_sort_artist_list = sort_artist_list[1:]
+        additional_cred_sort_artist_list = cred_sort_artist_list[1:]
+        additional_legal_artist_list = legal_artist_list[1:]
+        additional_artist_ids = artist_ids[1:]
+        if additional_artist_ids:
+            destination_metadata['~artists_{0}_additional_id'.format(source_type,)] = additional_artist_ids
+        if additional_std_artist:
+            destination_metadata['~artists_{0}_additional_std'.format(source_type,)] = additional_std_artist
+        if additional_cred_artist:
+            destination_metadata['~artists_{0}_additional_cred'.format(source_type,)] = additional_cred_artist
+        if additional_sort_artist:
+            destination_metadata['~artists_{0}_additional_sort'.format(source_type,)] = additional_sort_artist
+        if additional_cred_sort_artist:
+            destination_metadata['~artists_{0}_additional_cred_sort'.format(source_type,)] = additional_cred_sort_artist
+        if additional_legal_artist:
+            destination_metadata['~artists_{0}_additional_legal'.format(source_type,)] = additional_legal_artist
+        if additional_std_artist_list:
+            destination_metadata['~artists_{0}_additional_std_multi'.format(source_type,)] = additional_std_artist_list
+        if additional_cred_artist_list:
+            destination_metadata['~artists_{0}_additional_cred_multi'.format(source_type,)] = additional_cred_artist_list
+        if additional_sort_artist_list:
+            destination_metadata['~artists_{0}_additional_sort_multi'.format(source_type,)] = additional_sort_artist_list
+        if additional_cred_sort_artist_list:
+            destination_metadata['~artists_{0}_additional_cred_sort_multi'.format(source_type,)] = additional_cred_sort_artist_list
+        if additional_legal_artist_list:
+            destination_metadata['~artists_{0}_additional_legal_multi'.format(source_type,)] = additional_legal_artist_list
+        if std_artist:
+            destination_metadata['~artists_{0}_all_std'.format(source_type,)] = std_artist
+        if cred_artist:
+            destination_metadata['~artists_{0}_all_cred'.format(source_type,)] = cred_artist
+        if cred_sort_artist:
+            destination_metadata['~artists_{0}_all_cred_sort'.format(source_type,)] = cred_sort_artist
+        if sort_artist:
+            destination_metadata['~artists_{0}_all_sort'.format(source_type,)] = sort_artist
+        if legal_artist:
+            destination_metadata['~artists_{0}_all_legal'.format(source_type,)] = legal_artist
+        if std_artist_list:
+            destination_metadata['~artists_{0}_all_std_multi'.format(source_type,)] = std_artist_list
+        if cred_artist_list:
+            destination_metadata['~artists_{0}_all_cred_multi'.format(source_type,)] = cred_artist_list
+        if sort_artist_list:
+            destination_metadata['~artists_{0}_all_sort_multi'.format(source_type,)] = sort_artist_list
+        if cred_sort_artist_list:
+            destination_metadata['~artists_{0}_all_cred_sort_multi'.format(source_type,)] = cred_sort_artist_list
+        if legal_artist_list:
+            destination_metadata['~artists_{0}_all_legal_multi'.format(source_type,)] = legal_artist_list
+        if sort_pri_artist:
+            destination_metadata['~artists_{0}_all_sort_primary'.format(source_type,)] = sort_pri_artist
+        if artist_types:
+            destination_metadata['~artists_{0}_all_types'.format(source_type,)] = artist_types
+        if artist_join_phrases:
+            destination_metadata['~artists_{0}_all_join_phrases'.format(source_type,)] = artist_join_phrases
+        if artist_count:
+            destination_metadata['~artists_{0}_all_count'.format(source_type,)] = artist_count
 
-def make_album_vars(api, album, album_metadata, release_metadata):
-    album_id = release_metadata['id'] if release_metadata else 'No Album ID'
-    process_artists(album_id, release_metadata, album_metadata, 'album')
+    def metadata_error(self, album_id, metadata_element, metadata_group):
+        self.api.logger.error("{0}: {1!r}: Missing '{2}' in {3} metadata.".format(
+            LOG_PREFIX, album_id, metadata_element, metadata_group,))
 
+    def make_album_vars(self, api, album, album_metadata, release_metadata):
+        album_id = release_metadata['id'] if release_metadata else 'No Album ID'
+        self.process_artists(album_id, release_metadata, album_metadata, 'album')
 
-def make_track_vars(api, album, album_metadata, track_metadata, release_metadata):
-    album_id = release_metadata['id'] if release_metadata else 'No Album ID'
-    process_artists(album_id, track_metadata, album_metadata, 'track')
-
-
-def metadata_error(album_id, metadata_element, metadata_group):
-    _api.logger.error("{0}: {1!r}: Missing '{2}' in {3} metadata.".format(
-        LOG_PREFIX, album_id, metadata_element, metadata_group,))
+    def make_track_vars(self, api, album, album_metadata, track_metadata, release_metadata):
+        album_id = release_metadata['id'] if release_metadata else 'No Album ID'
+        self.process_artists(album_id, track_metadata, album_metadata, 'track')
 
 
 def enable(api: PluginApi):
     """Called when plugin is enabled."""
-    global _api
-    _api = api
+    plugin = ArtistVariablesPlugin(api)
 
     # Register the plugin to run at a LOW priority so that other plugins that
     # modify the artist information can complete their processing and this plugin
     # is working with the latest updated data.
-    api.register_album_metadata_processor(make_album_vars, priority=-100)
-    api.register_track_metadata_processor(make_track_vars, priority=-100)
+    api.register_album_metadata_processor(plugin.make_album_vars, priority=-100)
+    api.register_track_metadata_processor(plugin.make_track_vars, priority=-100)
